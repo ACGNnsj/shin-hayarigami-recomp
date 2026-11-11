@@ -333,3 +333,10 @@ export XC2_INPUT_FORCE=1          # 窗口拿不到前台时也要能按键
 - 后端早通（fs_host.c MountSave/Commit + probe_restart/tx_commit 自测），这次是真 gameplay 存档点往返的一半（存）；
   读档一半待补（可选：重进标题选 继续 看是否回到存档场景）。
 - saverun keep-alive job 用户已手动结束，haya 进程同步退出，无残留。
+## 2026-11-11 shin first run into game select (both covers clean)
+- boot chain: Start 2-callback form (_ZN2nn4init5StartEmmPFvvES2_, sdk+0x2966c0) + module_inits in LATE slot; DT_INIT (main 10 / subsdk0 44 / sdk 106 / tfoaf1 26 / tfoaf2 27) -> nnMain -> hid -> audren -> NVN.
+- new hid service (framework/runtime/hid_srv.c+h, ipc.c registers "hid"): empirical loop -- cmd 128 SetNpadHandheldActivationMode(mode) returns ok (CRawPad ctor calls it directly, no CreateAppletResource first); unknown cmds log raw args + ipc_unimplemented for next round. NVN_RET = 0x4b4ec (BL+4 in CGraMgrNx::libInit).
+- two account overrides (ov_system.c): ShowUserSelector (writes local uid back) + IsUserRegistrationRequestPermitted (writes false); ShowWebPage stubs success (game only wants e-manual https://nippon1.jp/manual/shin_hayarigami1-2/switch/).
+- black-screen root cause was missing shader translator (translation failed, 60fps presents all black): shin build has no build/xlate; borrowed hayarigami's via XC2_XLATE env. TODO: copy/build one into shin build/xlate. NOTE: shin settings table has no XC2_INPUT_FORCE row (FATAL if set).
+- evidence: --seconds 90 exit=0, 5393 frames, 0 unimplemented / 0 validation errors / 0 shader failures; shin_game.png = game select (both covers + Please Select a Game., clean).
+- next: select game1 (needs foreground tap, wait until user away) -> OP movie/EOS chain -> save roundtrip -> commit.

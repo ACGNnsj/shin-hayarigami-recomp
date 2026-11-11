@@ -553,6 +553,46 @@ static void ov_last_user(Cpu *c) {
 // EnsureNetworkServiceAccountAvailable, GetNetworkServiceAccountId, LoadNetworkServiceAccountIdTokenCache: offline.
 static void ov_no_nsa(Cpu *c) { ret_x(c, ACCOUNT_R_NSA_UNAVAILABLE); }
 
+// Result ShowUserSelector(Uid *out, const UserSelectionSettings &): no UI on the
+// host; the one local user is always selected.
+static void ov_user_selector(Cpu *c) {
+    Uid *out = arg_p(c, 0);
+    if (!out) { ret_x(c, ACCOUNT_R_INVALID); return; }
+    plat_mutex_lock(&account_lock);
+    load_uid();
+    *out = local;
+    plat_mutex_unlock(&account_lock);
+    ret_x(c, 0);
+}
+
+// Result IsUserRegistrationRequestPermitted(bool *out): no registration UI exists,
+// so registering a new user from the selector is not permitted.
+static void ov_registration_permitted(Cpu *c) {
+    uint8_t *out = arg_p(c, 0);
+    if (!out) { ret_x(c, ACCOUNT_R_INVALID); return; }
+    *out = 0;
+    ret_x(c, 0);
+}
+
+// Result ShowWebPage(WebPageReturnValue *out, const ShowWebPageArg &): the host has
+// no browser; log the URL the game wanted and report success.
+static void ov_show_web_page(Cpu *c) {
+    const uint8_t *arg = arg_p(c, 1);
+    if (arg) {
+        char url[256]; unsigned n = 0;
+        // The arg embeds the URL as text; print the first printable run.
+        for (unsigned i = 0; i < 512 && n + 1 < sizeof url; i++) {
+            uint8_t ch = arg[i];
+            if (ch >= 0x20 && ch < 0x7f) url[n++] = (char)ch;
+            else if (n > 0 && url[n-1] != '|') url[n++] = '|';
+        }
+        url[n] = 0;
+        rt_logf("web: ShowWebPage arg %.200s: ok (no browser)
+", url);
+    } else rt_log("web: ShowWebPage null arg: ok (no browser)");
+    ret_x(c, 0);
+}
+
 // Result GetNickname(Nickname *out, const Uid &): 33 bytes, NUL-terminated UTF-8
 static void ov_nickname(Cpu *c) {
     char *out = arg_p(c, 0);
@@ -1045,6 +1085,9 @@ HOST_OVERRIDE("_ZN2nn7account8OpenUserEPNS0_10UserHandleERKNS0_3UidE", ov_open_u
 HOST_OVERRIDE("_ZN2nn7account12ListAllUsersEPiPNS0_3UidEi", ov_list_users);
 HOST_OVERRIDE("_ZN2nn7account44EnsureNetworkServiceAccountIdTokenCacheAsyncEPNS0_12AsyncContextERKNS0_10UserHandleE", ov_no_nsa);
 HOST_OVERRIDE("_ZN2nn7account17GetLastOpenedUserEPNS0_3UidE", ov_last_user);
+HOST_OVERRIDE("_ZN2nn7account16ShowUserSelectorEPNS0_3UidERKNS0_21UserSelectionSettingsE", ov_user_selector);
+HOST_OVERRIDE("_ZN2nn7account34IsUserRegistrationRequestPermittedEPb", ov_registration_permitted);
+HOST_OVERRIDE("_ZN2nn3web11ShowWebPageEPNS0_18WebPageReturnValueERKNS0_14ShowWebPageArgE", ov_show_web_page);
 HOST_OVERRIDE("_ZN2nn7account36EnsureNetworkServiceAccountAvailableERKNS0_10UserHandleE", ov_no_nsa);
 HOST_OVERRIDE("_ZN2nn7account26GetNetworkServiceAccountIdEPNS0_23NetworkServiceAccountIdERKNS0_10UserHandleE", ov_no_nsa);
 HOST_OVERRIDE("_ZN2nn7account37LoadNetworkServiceAccountIdTokenCacheEPmPcmRKNS0_10UserHandleE", ov_no_nsa);

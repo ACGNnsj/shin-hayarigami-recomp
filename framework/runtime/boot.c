@@ -23,22 +23,22 @@
 #include "vk.h"
 #include "platform/platform.h"
 
-// Hayarigami 1-2-3 was built against a newer NintendoSDK than XC2: its Start exports the three-callback form
-// (loader_ready, module_inits, module_finis).
-#define SYM_INIT_START "_ZN2nn4init5StartEmmPFvvES2_S2_"
-#define START_CALLBACKS 3                // (loader_ready, module_inits, module_finis)
+// Shin Hayarigami 1+2 ships NintendoSDK 11, whose nn::init::Start takes two callbacks (module_inits,
+// module_finis); XC2 and Hayarigami 1-2-3 used the older three-callback form (loader_ready first).
+#define SYM_INIT_START "_ZN2nn4init5StartEmmPFvvES2_"
+#define START_CALLBACKS 2                // (module_inits, module_finis)
 // main: return addresses of nnMain's SetFocusHandlingMode call (1.2.1 from this port's analysis of main; 1.4.3 from
 // MacNativeGames' scripts/verify_boot.py) and of the first nvnBootstrapLoader call, per game version.
 // XC2 3.0.1: nnMain never calls SetFocusHandlingMode (sdk's nn::oe::InitializeApplet does), so it has no checkpoint;
 // its only BL to nvnBootstrapLoader is at main+0x708b40 and returns to main+0x708b44.
 #define CHECKPOINT_RET 0ull
-#define NVN_RET 0x2931bcull    // Hayarigami 1-2-3: the return address of main's first nvnBootstrapLoader call
+#define NVN_RET 0x4b4ecull    // Shin Hayarigami 1+2: CGraMgrNx::libInit calls nvnBootstrapLoader,'s first nvnBootstrapLoader call
 #define CTOR_DONE 2                      // a module's constructor flag after its DT_INIT ran the init_array
 
-// The init_array sizes the boot check expects (MacNativeGames' boot check does the same): XC2 3.0.1's DT_INIT_ARRAYSZ
-// of main/subsdk0/sdk, 1600, 368 and 824 bytes.
+// The init_array sizes the boot check expects, in entries (DT_INIT_ARRAYSZ / 8): main 10, subsdk0 44, sdk 106,
+// tfoaf1 26, tfoaf2 27.
 typedef struct { const char *name; uint64_t entries; } InitCount;
-static const InitCount expected_inits[] = {{"main", 217}, {"subsdk0", 45}, {"sdk", 112}};
+static const InitCount expected_inits[] = {{"main", 10}, {"subsdk0", 44}, {"sdk", 106}, {"tfoaf1", 26}, {"tfoaf2", 27}};
 
 static volatile int32_t inits_done, checkpoint_seen;
 uint64_t rt_guest_start_ns;
@@ -68,12 +68,7 @@ static void check_npdm(void) {
                  core, stack);
 }
 
-// ---- the three callbacks of nn::init::Start (rtld's job on hardware)
-static void cb_loader_ready(Cpu *c) {
-    (void)c;
-    rt_log("boot: rtld callback: modules linked");
-}
-
+// ---- the two callbacks of nn::init::Start (rtld's job on hardware)
 // DT_INIT registers the module with musl (__nnmusl_init_dso) and runs its init_array; the constructor flag reads 2
 // afterwards (MacNativeGames loader.c:458-462).
 static void cb_module_inits(Cpu *c) {
@@ -359,7 +354,7 @@ void rt_frame_presented(const tex_t *t, uint64_t n) {
 }
 
 // ---- steps 9-14
-static uint64_t cb_addr[3];
+static uint64_t cb_addr[2];
 
 static void guest_main(Cpu *c) {
     uint32_t handle = kern_main_thread(&c);
@@ -367,8 +362,8 @@ static void guest_main(Cpu *c) {
     if (!start) rt_fatal("boot: %s is not exported", SYM_INIT_START);
     char d[128];
     rt_log("boot: ENTER nn::init::Start at %s, main thread %#x", ldr_describe(start, d, sizeof d), handle);
-    // nn::init::Start(main thread handle, arguments region, loader_ready, module_inits)
-    rt_call(c, start, START_CALLBACKS + 2, (uint64_t)handle, (uint64_t)0, cb_addr[0], cb_addr[1], cb_addr[2]);
+    // nn::init::Start(main thread handle, arguments region, module_inits, module_finis)
+    rt_call(c, start, START_CALLBACKS + 2, (uint64_t)handle, (uint64_t)0, cb_addr[0], cb_addr[1]);
     rt_fatal("boot: nn::init::Start returned");
 }
 
@@ -394,9 +389,8 @@ void rt_boot(void) {
     frame_step_init();
     res_init();
     cheats_init();   // after the patch sets: a cheat's set follows its setting
-    cb_addr[0] = hostfn_register("<rtld loader_ready>", cb_loader_ready);
+    cb_addr[0] = hostfn_register("<rtld module_finis>", cb_module_finis);
     cb_addr[1] = hostfn_register("<rtld module_inits>", cb_module_inits);
-    cb_addr[2] = hostfn_register("<rtld module_finis>", cb_module_finis);
     hostfn_seal();
     uint64_t held = plat_now_ms();
     if (warm) plat_thread_join(warm);
