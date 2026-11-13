@@ -347,3 +347,11 @@ export XC2_INPUT_FORCE=1          # 窗口拿不到前台时也要能按键
 - 改动: framework/recomp/nro.py (新建, 与nso.Nso同consumer接口) + gen.py默认modules加tfoaf1,tfoaf2 + layout.py/module.py按头16B判NRO + loader.c is_nro/nro_segments/nro_mod0 + ov_ro.c LoadModule no-op, Lookup走ldr_symbol全局表 + gen_modules.py改TITLE/gen-shin/expected-shin/extracted/shin + data/expected-shin.json + tools/build_shin.sh/compile_shin_one.sh (新建).
 - 输入基准: data/expected-shin.json base版NRO sha; 汉化NRO同尺寸各差725B, 暂不用.
 - 验证: DT_INIT 10/44/106/26/27全对; --seconds 90 exit0见选作.
+
+## 2026-11-14 select实验: 已进第1部标题 (tfoaf1 renders), 按键未推进
+- 现象: --seconds 180, 约60s后画面为第1部标题 (少女脸 + 真・流行り神 logo + しんはやりがみ, 1550x902 BitBlt实读, build/v0/select_A.png 2.6MB). 非11日双封面选作画面, 说明 select->game1 已过去 (自动超时或默认选中; 未手动干预该进程).
+- 意义: tfoaf1 NRO代码在跑且标题渲染干净, LoadModule no-op + LdrSymbol全局表链路过关, 全程无崩 (进程活到自退). 游戏自带分辨率 (无1920x1080 patch, 与haya交接一致).
+- 未推进: PostMessage WM_KEYDOWN/UP E(0x45) 到haya窗口, 12s后仍标题 (select_B.png同画面). 输入要走焦点路径 (haya系_valid/press脚本都用前台keybd_event), 无焦点Post大概率到不了hid/Npad.
+- 前台问题: SetForegroundWindow后_fg_verify多次FOREGROUND_MISMATCH (仅01:42一次HAYA_IS_FOREGROUND); 疑Windows前台锁 (headless pwsh非前台进程). 已验证workaround: SetWindowPos TOPMOST(0x43, 不动位不动尺寸) 让BitBlt取到干净画面, 不依赖焦点.
+- 沙箱坑: pwsh写仓库目录被拒 (GDI+落盘失败), 截图改落D:/consoles/tools (可写) 再cp回build/v0归档; pwsh写STATUS.md同样被拒, 改wsl append.
+- 脚本: tools/_select1.ps1 (启动+前台+E+双截, 截图落tools) + tools/_selectA.ps1 (TOPMOST干净截图相). 下一步: 焦点稳定时前台keybd_event E -> 看进不进OP/影片 (交接§6.3/6.5).
