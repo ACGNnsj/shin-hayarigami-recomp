@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Generate build/v0/modules.c: module glue for the Hayarigami 1-2-3 port."""
+"""Generate build/v0/modules.c: module glue for the Shin Hayarigami 1+2 port."""
 import json, pathlib, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-gen = ROOT / 'build' / 'gen-all'
+gen = ROOT / 'build' / 'gen-shin'
 out = ROOT / 'build' / 'v0'
 out.mkdir(parents=True, exist_ok=True)
 layout = json.loads((gen / 'layout.json').read_text())
-expected = json.loads((ROOT / 'data' / 'expected-latest.json').read_text())
+expected = json.loads((ROOT / 'data' / 'expected-shin.json').read_text())
 hashes = expected['exefs_sha256']
-TITLE = 0x010095B01AF94000
+TITLE = 0x010005F00E036000
 
 def cs(s):
     return '"' + s.replace('\\', '\\\\').replace('"', '\\"') + '"'
@@ -33,10 +33,10 @@ for n in names:
 L += ['    return n;', '}', '', 'const RtFileHash rt_exefs_sha256[] = {']
 L += [f'    {{{cs(f)}, {cs(h)}}},' for f, h in sorted(hashes.items())]
 L += ['};', f'const int rt_exefs_sha256_count = {len(hashes)};', '']
-L.append(f'const char rt_default_exefs[] = {cs(str((ROOT / "build/extracted/latest/exefs").as_posix()))};')
-L.append(f'const char rt_default_romfs[] = {cs(str((ROOT / "build/extracted/latest/romfs").as_posix()))};')
+L.append(f'const char rt_default_exefs[] = {cs(str((ROOT / "build/extracted/shin/exefs").as_posix()))};')
+L.append(f'const char rt_default_romfs[] = {cs(str((ROOT / "build/extracted/shin/romfs").as_posix()))};')
 L.append(f'const char rt_default_profile[] = {cs(str((ROOT / "build/profile").as_posix()))};')
 L += ['const int rt_game_version = 0;', 'const char rt_port_version[] = "0.0.1";',
-      f'const char rt_game_name[] = {cs("Hayarigami 1-2-3")};', f'const uint64_t rt_title_id = {TITLE:#018x}ull;', '']
+      f'const char rt_game_name[] = {cs("Shin Hayarigami 1+2")};', f'const uint64_t rt_title_id = {TITLE:#018x}ull;', '']
 (out / 'modules.c').write_text('\n'.join(L), encoding='utf-8')
 print('wrote', out / 'modules.c')

@@ -1,0 +1,64 @@
+{
+ "version": 0,
+ "display_version": "Shin Hayarigami 1+2 pack (010005F00E036000)",
+ "note": "Exefs + RomFS extracted from the 1+2 pack XCI and its Chinese-patch RomFS; Tfoaf1/2 are the two game NROs.",
+ "exefs_sha256": {
+  "main": "7e684a449f2b896a9ec4d3dab7369680faa7d1b6d5baea2aed743e41b0c6f138",
+  "sdk": "5a5f0a27a2acc339e3ad868fc9680107d320f48069ef9a298b6ccb67c2ce74d3",
+  "subsdk0": "95ac31f154e350660867d1ee6fca3a37029753c95c3173cf4f000b1ca57ad88f",
+  "tfoaf1": "6e17ad141a5af4e323b84e789a73dd82c64473f91f1e8c490b9d86bffe7c2936",
+  "tfoaf2": "f2b4fe196e85e0e23c948c268ef410524834f129dd2ec549325a4c54e62b181f",
+  "main.npdm": "8d668901d9826403df51b7d973bfeb346a923907cfbfd5348b5cfb2206584d70",
+  "rtld": "e893e12a4199b0c2c15775bf03f58987fa6227923ba8a04832aabf2352d2b1b7"
+ },
+ "romfs": {
+  "size": 2273325415,
+  "sha256": null,
+  "file_count": 7,
+  "files": [
+   {
+    "path": "index.json",
+    "size": 2807,
+    "sha256": "08d206b344a39adfa51b1b65e67745030a5b0daa919e5647c71603ba95abd793",
+    "from": "pack"
+   },
+   {
+    "path": "romfs.bin",
+    "size": 2272332104,
+    "sha256": "f8aaaf8086af0ec4c403867c3ed38e96874e38c85d7fe75d0ebcecc4448717dd",
+    "from": "pack"
+   },
+   {
+    "path": "%SystemDrive%/ProgramData/Microsoft/Windows/Caches/cversions.2.db",
+    "size": 16384,
+    "sha256": "6be92afc2a8471d77d39942f08fbc452d53ab7447772093129756f8da25b3644",
+    "from": "pack"
+   },
+   {
+    "path": "%SystemDrive%/ProgramData/Microsoft/Windows/Caches/{10BB3D01-1700-4F9B-8CC7-AEC7A5AFAFB5}.2.ver0x0000000000000001.db",
+    "size": 1240,
+    "sha256": "8ad0867d202f26bc66406a12720849bd6311b19e279e2fb2af48a64234d13e7f",
+    "from": "pack"
+   },
+   {
+    "path": "%SystemDrive%/ProgramData/Microsoft/Windows/Caches/{6AF0698E-D558-4F6E-9B3C-3716689AF493}.2.ver0x0000000000000001.db",
+    "size": 309328,
+    "sha256": "15b981b65760082d2cd3da130f70cb0499540218b6d42006bf587dc244bff882",
+    "from": "pack"
+   },
+   {
+    "path": "%SystemDrive%/ProgramData/Microsoft/Windows/Caches/{A1241246-B6A3-4363-B5CB-95EBDD3D33E3}.2.ver0x0000000000000001.db",
+    "size": 1064,
+    "sha256": "591cd3df498baf3642f1a2a6b6eb5a75591c4a208c51a7d33da7755bf59e6df3",
+    "from": "pack"
+   },
+   {
+    "path": "%SystemDrive%/ProgramData/Microsoft/Windows/Caches/{DDF571F2-BE98-426D-8288-1A9A39C3FDA2}.2.ver0x0000000000000001.db",
+    "size": 662488,
+    "sha256": "87651e1cfcffc359c6531648a3bb628f94f654e25659445118c14233eedf6f66",
+    "from": "pack"
+   }
+  ]
+ },
+ "base_title_id": "010005F00E036000"
+}

@@ -140,6 +140,36 @@ static void nso_segment(const uint8_t *raw, const Seg *s, uint8_t *dst, const ch
     }
 }
 
+// ---- NRO (game-shipped code: the whole file maps at the base, segments uncompressed, the dynamic values are
+// image offsets like NSO; MOD0 sits at a fixed ro offset instead of behind the .text entry branch)
+static int is_nro(const uint8_t *raw, size_t len) {
+    return (len >= 20 && !memcmp(raw + 16, "NRO0", 4)) || (len >= 4 && !memcmp(raw, "NRO0", 4));
+}
+
+static uint64_t nro_segments(const uint8_t *raw, size_t len, const char *name, Seg seg[3]) {
+    size_t h = (len >= 20 && !memcmp(raw + 16, "NRO0", 4)) ? 16 : 0;
+    if (len < h + 0x40) rt_fatal("loader: %s is not an NRO", name);
+    for (int i = 0; i < 3; i++) {
+        seg[i].file_off = seg[i].mem_off = *(const uint32_t *)(raw + h + 0x10 + i * 8);
+        seg[i].size = *(const uint32_t *)(raw + h + 0x14 + i * 8);
+        seg[i].csize = seg[i].size;
+        seg[i].compressed = 0;
+        if ((uint64_t)seg[i].file_off + seg[i].size > len)
+            rt_fatal("loader: %s segment %d lies outside the file", name, i);
+    }
+    uint32_t bss = *(const uint32_t *)(raw + h + 0x28);
+    return ((uint64_t)seg[2].mem_off + seg[2].size + bss + 0xFFF) & ~0xFFFull;
+}
+
+static uint64_t nro_mod0(uint64_t base) {
+    size_t h = !memcmp((const void *)(uintptr_t)(base + 16), "NRO0", 4) ? 16 : 0;
+    uint64_t ro = base + rd32(base + h + 0x18), size = rd32(base + h + 0x1C);
+    if (size >= 0x38 && !memcmp((const void *)(uintptr_t)(ro + 0x34), "MOD0", 4)) return ro + 0x34;
+    for (uint64_t o = 0; o + 4 <= size; o += 4)
+        if (!memcmp((const void *)(uintptr_t)(ro + o), "MOD0", 4)) return ro + o;
+    return 0;
+}
+
 // ---- symbols
 static const char *sym_name(const Mod *m, uint32_t i) { return m->strtab + m->syms[i].name; }
 static int sym_defined(const Mod *m, uint32_t i) { return m->syms[i].shndx != 0; }
@@ -206,7 +236,12 @@ static void make_funcs(Mod *m) {
 static void parse_dynamic(Mod *m) {
     uint64_t base = m->pub.base;
     uint64_t mod0 = base + rd32(base + 4);
-    if (memcmp((const void *)(uintptr_t)mod0, "MOD0", 4)) rt_fatal("loader: %s has no MOD0 header", m->pub.name);
+    if (is_nro((const uint8_t *)(uintptr_t)base, m->pub.size)) {
+        mod0 = nro_mod0(base);
+        if (!mod0) rt_fatal("loader: %s has no MOD0 header", m->pub.name);
+    } else if (memcmp((const void *)(uintptr_t)mod0, "MOD0", 4)) {
+        rt_fatal("loader: %s has no MOD0 header", m->pub.name);
+    }
     uint64_t dyn = mod0 + (int64_t)(int32_t)rd32(mod0 + 4);
     uint64_t rela = 0, relasz = 0, jmprel = 0, pltsz = 0, hash = 0, gnu_hash = 0, relr = 0, relrsz = 0;
     for (const uint64_t *d = (const uint64_t *)(uintptr_t)dyn; d[0] != DT_NULL; d += 2) {
@@ -276,7 +311,8 @@ static void load_module(Mod *m, const char *dir, const RtLayoutEntry *lay) {
     size_t len;
     uint8_t *raw = ldr_read_verified(dir, lay->name, &len);
     Seg seg[3];
-    uint64_t size = nso_segments(raw, len, lay->name, seg);
+    uint64_t size = is_nro(raw, len) ? nro_segments(raw, len, lay->name, seg)
+                                       : nso_segments(raw, len, lay->name, seg);
     if (size != lay->size)
         rt_fatal("loader: %s image is %#llx bytes, layout.h says %#llx: generated C and game files differ", lay->name,
                  (unsigned long long)size, (unsigned long long)lay->size);

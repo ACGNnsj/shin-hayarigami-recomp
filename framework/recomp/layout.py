@@ -12,12 +12,13 @@ IPC buffers can encode.
 import json
 from pathlib import Path
 
+from nro import Nro
 from nso import Nso
 
 FIRST_BASE = 0x7000000000
 ALIGN = 0x200000
 ADDRESS_LIMIT = 1 << 39
-ORDER = ['main'] + [f'subsdk{i}' for i in range(10)] + ['sdk']
+ORDER = ['main'] + [f'subsdk{i}' for i in range(10)] + ['sdk', 'tfoaf1', 'tfoaf2']
 
 
 def align_up(v, a=ALIGN):
@@ -32,7 +33,9 @@ def layout(exefs):
         path = exefs / name
         if not path.exists():
             continue
-        size = Nso(str(path)).size
+        raw = open(str(path), 'rb').read(20)
+        is_nro = raw[16:20] == b'NRO0' or raw[:4] == b'NRO0'
+        size = (Nro if is_nro else Nso)(str(path)).size
         out.append((name, base, size))
         base = align_up(base + size)
     if base > ADDRESS_LIMIT:

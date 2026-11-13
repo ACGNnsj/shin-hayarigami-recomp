@@ -10,6 +10,7 @@ from collections import OrderedDict
 import numpy as np
 
 from lifter import Insn, Lifter, Unsupported, hx
+from nro import Nro
 from nso import Nso, R_AARCH64_RELATIVE
 
 LIFT_CACHE = 1 << 16  # lifted instructions kept per module; analyses revisit nearby addresses only
@@ -35,7 +36,9 @@ def _read_encoded(img, off, enc, pc_base):
 class Module:
     def __init__(self, name, path, base, simd='c'):
         self.name = name
-        self.nso = Nso(str(path))
+        raw = open(str(path), 'rb').read(20)
+        is_nro = raw[16:20] == b'NRO0' or raw[:4] == b'NRO0'
+        self.nso = (Nro if is_nro else Nso)(str(path))
         self.base = base
         n = self.nso
         self.image = bytes(n.image)

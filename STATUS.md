@@ -340,3 +340,10 @@ export XC2_INPUT_FORCE=1          # 窗口拿不到前台时也要能按键
 - black-screen root cause was missing shader translator (translation failed, 60fps presents all black): shin build has no build/xlate; borrowed hayarigami's via XC2_XLATE env. TODO: copy/build one into shin build/xlate. NOTE: shin settings table has no XC2_INPUT_FORCE row (FATAL if set).
 - evidence: --seconds 90 exit=0, 5393 frames, 0 unimplemented / 0 validation errors / 0 shader failures; shin_game.png = game select (both covers + Please Select a Game., clean).
 - next: select game1 (needs foreground tap, wait until user away) -> OP movie/EOS chain -> save roundtrip -> commit.
+
+## 2026-11-11 NRO static-link落地 (tfoaf1/2焊死, 交接§4路线a)
+- 路线: lift期静态链接, NRO当第4/5模块焊死, import绑main+sdk全局表. 依据: NRO对main单向依赖 (tfoaf1 undef 169中122由main满足, tfoaf2 undef 170中123由main满足), RELA 4528条 (相对4044), PLT约948, 标准AArch64类型257/1025/1026/1027, 仅GNU_HASH; 头=16B游戏封装+NRO0, MOD0在ro+0x34 (两部一致).
+- layout (build/v0/modules.c _Static_assert为准): main 0x7000000000/0x55d000, subsdk0 0x7000600000/0x71d000, sdk 0x7000e00000/0xcd4000, tfoaf1 0x7001c00000/0x11ec000, tfoaf2 0x7002e00000/0x11fd000.
+- 改动: framework/recomp/nro.py (新建, 与nso.Nso同consumer接口) + gen.py默认modules加tfoaf1,tfoaf2 + layout.py/module.py按头16B判NRO + loader.c is_nro/nro_segments/nro_mod0 + ov_ro.c LoadModule no-op, Lookup走ldr_symbol全局表 + gen_modules.py改TITLE/gen-shin/expected-shin/extracted/shin + data/expected-shin.json + tools/build_shin.sh/compile_shin_one.sh (新建).
+- 输入基准: data/expected-shin.json base版NRO sha; 汉化NRO同尺寸各差725B, 暂不用.
+- 验证: DT_INIT 10/44/106/26/27全对; --seconds 90 exit0见选作.
