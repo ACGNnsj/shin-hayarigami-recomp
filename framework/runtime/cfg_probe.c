@@ -252,13 +252,13 @@ int probe_cfg(void) {
     int32_t st[2];
     CHECK(input_map_buttons(dn) == 0, "keys: nothing held, no buttons");
     dn[KEY_MOUSE_L] = 1;
-    CHECK(input_map_buttons(dn) == 1ull << B_Y, "keys: left mouse button is Y");
+    CHECK(input_map_buttons(dn) == 1ull << B_A, "keys: left mouse button is A");
     dn[KEY_MOUSE_R] = dn[KEY_Z] = 1;
     CHECK(input_map_buttons(dn) == (1ull << B_Y | 1ull << B_ZL), "keys: right mouse button and Z both press ZL");
     memset(dn, 0, sizeof dn);
     dn[KEY_X] = dn[KEY_TAB] = dn[KEY_M] = dn[KEY_LCTRL] = dn[KEY_3] = 1;
-    CHECK(input_map_buttons(dn) == (1ull << B_ZR | 1ull << B_PLUS | 1ull << B_MINUS | 1ull << B_STICK_L | 1ull << B_RIGHT),
-          "keys: X ZR, Tab Plus, M Minus, Left Ctrl stick click, 3 D-pad right");
+    CHECK(input_map_buttons(dn) == (1ull << B_ZR | 1ull << B_MINUS | 1ull << B_STICK_L | 1ull << B_RIGHT),
+          "keys: X ZR, Tab unbound, M Minus, Left Ctrl stick click, 3 D-pad right");
     memset(dn, 0, sizeof dn);
     dn[KEY_W] = 1;
     input_map_stick(dn, 0, st);
