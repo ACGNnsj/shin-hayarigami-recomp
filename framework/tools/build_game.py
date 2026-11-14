@@ -151,7 +151,7 @@ DEFAULT_DEPS = ROOT / 'toolchain' / 'deps-mingw'
 INSTALL_SIDE = {'romfs.c', 'patches.c', 'ov_zstd.c'}
 LIB_NAME = 'libxc2rt.a'
 AR = UCRT / 'llvm-ar.exe' if WIN else on_path('llvm-ar')
-WINDRES = UCRT / 'windres.exe'   # runtime/xc2.rc: the manifest of xc2.exe
+WINDRES = UCRT / 'windres.exe'   # runtime/haya.rc: the manifest and icon of the exe
 TOOLCHAIN_BIN = None   # llvm-mingw bin directory, set by main() for --toolchain
 DEPS = None            # the deps directory of an llvm-mingw build
 # tools/data/expected-<display version>.json for each build version name.
@@ -278,7 +278,7 @@ def other_os(name):
     stem = name.rsplit('.', 1)[0]
     if WIN:
         return stem.endswith('_sdl') or name == 'linux.c'
-    return stem.endswith('_win') or name in ('win32.c', 'xc2.rc')
+    return stem.endswith('_win') or name in ('win32.c', 'haya.rc')
 
 
 def runtime_sources(skip=()):
@@ -404,9 +404,9 @@ def ninja_file(gen, out, mods, pool_depth, skip=(), prebuilt=False, runtime_lib=
         sources += [out / 'modules.c']
     for src in sources:
         o = runtime_object(out, src)
-        if src.suffix == '.rc':   # windres writes no depfile: the files xc2.rc embeds are listed by hand
-            lines.append(f'build {ninja_path(o)}: rc {ninja_path(src)} | {ninja_path(RUNTIME / "xc2.manifest")} '
-                         f'{ninja_path(RUNTIME / "xc2.ico")}')
+        if src.suffix == '.rc':   # windres writes no depfile: the files the .rc embeds are listed by hand
+            lines.append(f'build {ninja_path(o)}: rc {ninja_path(src)} | {ninja_path(RUNTIME / (src.stem + ".manifest"))} '
+                         f'{ninja_path(RUNTIME / (src.stem + ".ico"))}')
         else:
             lines.append(f'build {ninja_path(o)}: cc_rt {ninja_path(src)}')
         rt.append(o)

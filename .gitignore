@@ -9,3 +9,6 @@ __pycache__/
 fs_progress.log
 # IDE state.
 .idea/
+
+# Generated icon (tools/make_haya_icon.py).
+framework/runtime/haya.ico

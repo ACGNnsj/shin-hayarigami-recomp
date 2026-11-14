@@ -34,4 +34,6 @@ for f in xc2_xlate.exe xc2_xlate.id; do
 done
 # 7. save/profile tree (fs MountSave FATALs if missing; pwsh-spawned runs cannot mkdir under repo taint)
 mkdir -p build/profile/save build/profile/save-backup build/profile/save-tx build/profile/temp build/profile/cache
+# 8. icon (procedural red-brush mark, framework/runtime/haya.ico; title lives in the window code)
+if [ ! -f framework/runtime/haya.ico ]; then /d/consoles/ns/hayarigami-recomp/.venv/Scripts/python.exe tools/make_haya_icon.py >/dev/null; fi
 ls -l build/v0/haya.exe build/xlate/

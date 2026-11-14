@@ -375,3 +375,8 @@ export XC2_INPUT_FORCE=1          # 窗口拿不到前台时也要能按键
 - 坑: HAYA_长5非4, key_of的+PREFIX_LEN曾把FLIGHT切成_FLIGHT致cfg_meta FATAL (probe-cfg抓到); 修法: 各前缀自带长度, norm_key/key_of复用剥离结果. 另OPS编辑保留mtime致build_game按manifest误判未改, 重编前一律touch.
 - 验证: --probe-cfg ok (三级优先+存回+新键位断言全过); haya.ini 110秒启动正常 (Z轮, 标题干净).
 - 收尾: build/v0/xc2.ini -> haya.ini (盘面改名); build/xlate补haya_xlate.* (stage 6改名拷贝); _selectZ.ps1归档.
+## 2026-11-14 标题+图标 (真流行之神1+2, 官方logo裁切)
+- 标题: gfx_window_sdl.c:250 + win32.c:256 硬编码改为真流行之神1+2 (用户拍板中文名); 报错框/About随HAYA改名已是Hayarigami Recomp, 保持.
+- 图标: 官方logo (ArtStation inochi-pm-sh1-2-logo.jpg, 1920x1869) 取右下红字“1·2 Pack”700px方裁, PIL LANCZOS缩6尺寸直写ICO (tools/make_haya_icon.py + tools/hayalogo.jpg源图入库; 第一版程序化红笔刷已替换; 教训: 预览PNG要RGBA重排, BMP是BGRA, 第一版看走眼出过蓝色).
+- 接入: framework/runtime/haya.rc (manifest+ICON) 替代xc2.*, git rm旧三件; build_game.py行281过滤+154注释+408行rc依赖改src.stem派生; build_shin.sh stage 8只负责图标生成; .gitignore加framework/runtime/haya.ico. 坑: ninja depfile记旧manifest名会幻影报错, 删stale xc2.o+重编即好; xc2.o另含UTF-8 manifest不可单删, 必须整套换.
+- 验证: 标题栏中文+红标实读, 110秒启动正常.
