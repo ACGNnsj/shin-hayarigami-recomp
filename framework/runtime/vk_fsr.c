@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include "cfg.h"
+#include "vk_dlss.h"
 #include "fsr_easu_spv.h"
 #include "fsr_rcas_spv.h"
 #include "host.h"
@@ -102,7 +103,10 @@ static int ensure_images(VkCtx *c, uint32_t w, uint32_t h) {
     // A swapchain size change: earlier presents may still read the old images. vkDeviceWaitIdle needs every queue
     // externally synchronized, so it holds the queue lock like a submission.
     vk_queue_lock();
-    vkDeviceWaitIdle(c->device);
+    {
+        PFN_vkDeviceWaitIdle sl = (PFN_vkDeviceWaitIdle)vk_dlss_proc("vkDeviceWaitIdle");
+        (sl ? sl : vkDeviceWaitIdle)(c->device);
+    }
     vk_queue_unlock();
     free_images(c);
     for (int i = 0; i < 2; i++) {
@@ -158,7 +162,16 @@ static void bind_pass(VkCommandBuffer cb, VkPipeline p, VkImageView in, VkImageV
 int vk_fsr_record(VkCommandBuffer cb, unsigned slot, VkImage src, VkFormat fmt, int sw, int sh, const int crop[4],
                   VkImage dst, int dx, int dy, uint32_t dw, uint32_t dh) {
     int cw = crop[2], ch = crop[3];
-    if (strcmp(cfg_value("HAYA_UPSCALER"), "fsr") || (dw <= (uint32_t)cw && dh <= (uint32_t)ch) || !fmt) return 0;
+    int is_fsr = !strcmp(cfg_value("HAYA_UPSCALER"), "fsr");
+    int is_dlss = !strcmp(cfg_value("HAYA_UPSCALER"), "dlss") && vk_dlss_available();
+    if ((!is_fsr && !is_dlss) || (!is_dlss && dw <= (uint32_t)cw && dh <= (uint32_t)ch) || !fmt) {
+        static int nq = 0;
+        if (++nq % 600 == 1)
+            rt_log("vk: DLSS probe: record early-out (is_fsr=%d is_dlss=%d fmt=%u upscaler=%s mode=%s g=%s)",
+                   is_fsr, is_dlss, fmt, cfg_value("HAYA_UPSCALER"), cfg_value("HAYA_DLSS_MODE"),
+                   cfg_value("HAYA_DLSS_G"));
+        return 0;
+    }
     VkCtx *c = vk_ctx();
     if (!F.tried) init(c);
     if (!F.ok || !ensure_images(c, dw, dh)) return 0;
@@ -171,6 +184,50 @@ int vk_fsr_record(VkCommandBuffer cb, unsigned slot, VkImage src, VkFormat fmt, 
                                 .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
     if (vkCreateImageView(c->device, &vi, NULL, &F.src_view[slot]) != VK_SUCCESS) {
         F.src_view[slot] = VK_NULL_HANDLE;
+        rt_log("vk: DLSS probe: src view creation failed");
+        return 0;
+    }
+    // DLSS on the present path: the replay note only matches HAYA resolves, so other games upscale the final
+    // picture here with synthetic static inputs (see vk_fsr3_synth). Needs no FSR library or context.
+    { // FG probe: gate census, remove after
+        static int n = 0;
+        if (++n % 60 == 1)
+            rt_log("vk: DLSS gate census %d: upscaler=%s avail=%d dlaa=%d fmt=%u %dx%d->%ux%u", n,
+                   cfg_value("HAYA_UPSCALER"), vk_dlss_available(), vk_dlss_dlaa(), fmt, cw, ch, dw, dh);
+    }
+    if (!strcmp(cfg_value("HAYA_UPSCALER"), "dlss") && vk_dlss_available() &&
+        ((dw > (uint32_t)cw || dh > (uint32_t)ch) || vk_dlss_dlaa()) && fmt) {
+        VkImage sdepth = VK_NULL_HANDLE, smvec = VK_NULL_HANDLE, sout = VK_NULL_HANDLE;
+        VkImageView sdepth_view = VK_NULL_HANDLE, smvec_view = VK_NULL_HANDLE, sout_view = VK_NULL_HANDLE;
+        if (vk_fsr3_synth(c, cb, (uint32_t)cw, (uint32_t)ch, dw, dh, &sdepth, &sdepth_view, &smvec, &smvec_view, &sout,
+                           &sout_view)) {
+            float jit[2] = {0, 0}, ms[2] = {1, 1};
+            barrier(cb, src, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                      VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, VK_ACCESS_2_MEMORY_WRITE_BIT,
+                      VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
+            int ok = vk_dlss_dispatch(cb, src, F.src_view[slot], fmt, sdepth, sdepth_view, VK_FORMAT_R32_SFLOAT,
+                                        smvec, smvec_view, VK_FORMAT_R16G16B16A16_SFLOAT, (uint32_t)cw, (uint32_t)ch, dw,
+                                        dh, jit, ms, 1.0f, 2000.0f, 1.0472f, 0, sout, sout_view,
+                                        VK_FORMAT_R16G16B16A16_SFLOAT);
+            barrier(cb, src, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+                      VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, 0, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, 0);
+            if (ok) {
+                barrier(cb, sout, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                          VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                          VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
+                VkImageBlit region = {.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
+                                      .srcOffsets = {{0, 0, 0}, {(int)dw, (int)dh, 1}},
+                                      .dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
+                                      .dstOffsets = {{dx, dy, 0}, {dx + (int)dw, dy + (int)dh, 1}}};
+                vkCmdBlitImage(cb, sout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst,
+                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region, VK_FILTER_NEAREST);
+                barrier(cb, sout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+                          VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT,
+                          VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT);
+                return 1;
+            }
+            rt_log("vk: DLSS present dispatch failed; the present falls back to a bilinear blit");
+        }
         return 0;
     }
     int sharp = cfg_int("HAYA_SHARPNESS");

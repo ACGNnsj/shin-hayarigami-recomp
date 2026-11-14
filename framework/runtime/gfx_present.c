@@ -25,6 +25,7 @@
 #include "nvn_api.h"
 #include "ui/menu.h"
 #include "vk.h"
+#include "vk_dlss.h"
 #include "platform/platform.h"
 
 #define FRAMES 2
@@ -335,7 +336,10 @@ static int create_swapchain(void) {
             }
         }
     }
-    if (!fg) r = vkCreateSwapchainKHR(c->device, &ci, NULL, &g_sc);
+    if (!fg) {
+        PFN_vkCreateSwapchainKHR sl = (PFN_vkCreateSwapchainKHR)vk_dlss_proc("vkCreateSwapchainKHR");
+        r = (sl ? sl : vkCreateSwapchainKHR)(c->device, &ci, NULL, &g_sc);
+    }
     if (r != VK_SUCCESS) {
         rt_log("gfx: vkCreateSwapchainKHR failed (%d)", (int)r);
         g_sc = old;
@@ -348,7 +352,10 @@ static int create_swapchain(void) {
         if (g_sc_view[i]) vkDestroyImageView(c->device, g_sc_view[i], NULL);
         g_sc_view[i] = VK_NULL_HANDLE;
     }
-    if (!fg && old) vkDestroySwapchainKHR(c->device, old, NULL);
+    if (!fg && old) {
+        PFN_vkDestroySwapchainKHR sl = (PFN_vkDestroySwapchainKHR)vk_dlss_proc("vkDestroySwapchainKHR");
+        (sl ? sl : vkDestroySwapchainKHR)(c->device, old, NULL);
+    }
     g_sc_fmt = sf.format;
     g_sc_ext = ext;
     g_sc_n = 0;
@@ -628,6 +635,7 @@ static void present_image(VkImage src, VkImageLayout layout, VkFormat fmt, int w
     int fgrect[4] = {to[0], to[1], to[2], to[3]};
     if (vk_fg_active()) vk_fg_frame(c, cb, have ? &fr : NULL, fgrect);
     // FSR (HAYA_UPSCALER) when the picture's rectangle is larger than the crop; else the bilinear blit
+    vk_dlss_fg_tick(); // Phase 2: DLSS-G GetState poll, a no-op unless HAYA_DLSS_G=on and bound
     int fsr = general && vk_fsr_record(cb, slot, src, fmt, w, h, rect, dst, to[0], to[1], (uint32_t)to[2], (uint32_t)to[3]);
     g_scaler = fsr ? 2 : cw != to[2] || ch != to[3];
     if (!fsr) {
@@ -746,12 +754,16 @@ void gfx_window_release_vk(void) {
     plat_rmutex_lock(&g_pl);
     if (c && g_started) {
         vk_queue_lock();
-        vkDeviceWaitIdle(c->device);
+        {
+            PFN_vkDeviceWaitIdle sl = (PFN_vkDeviceWaitIdle)vk_dlss_proc("vkDeviceWaitIdle");
+            (sl ? sl : vkDeviceWaitIdle)(c->device);
+        }
         vk_queue_unlock();
         g_flip_on = 0;   // its blit is done (device idle); the swapchain goes away unpresented
         menu_vk_release();
         vk_fsr_release();
         vk_fsr3_release();
+        vk_dlss_release();
         free_capture();
         free_thumbs();
         for (int i = 0; i < FRAMES; i++) {
