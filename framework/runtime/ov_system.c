@@ -587,8 +587,7 @@ static void ov_show_web_page(Cpu *c) {
             else if (n > 0 && url[n-1] != '|') url[n++] = '|';
         }
         url[n] = 0;
-        rt_logf("web: ShowWebPage arg %.200s: ok (no browser)
-", url);
+        rt_logf("web: ShowWebPage arg %.200s: ok (no browser)\n", url);
     } else rt_log("web: ShowWebPage null arg: ok (no browser)");
     ret_x(c, 0);
 }

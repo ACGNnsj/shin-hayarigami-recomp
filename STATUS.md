@@ -354,4 +354,12 @@ export XC2_INPUT_FORCE=1          # 窗口拿不到前台时也要能按键
 - 未推进: PostMessage WM_KEYDOWN/UP E(0x45) 到haya窗口, 12s后仍标题 (select_B.png同画面). 输入要走焦点路径 (haya系_valid/press脚本都用前台keybd_event), 无焦点Post大概率到不了hid/Npad.
 - 前台问题: SetForegroundWindow后_fg_verify多次FOREGROUND_MISMATCH (仅01:42一次HAYA_IS_FOREGROUND); 疑Windows前台锁 (headless pwsh非前台进程). 已验证workaround: SetWindowPos TOPMOST(0x43, 不动位不动尺寸) 让BitBlt取到干净画面, 不依赖焦点.
 - 沙箱坑: pwsh写仓库目录被拒 (GDI+落盘失败), 截图改落D:/consoles/tools (可写) 再cp回build/v0归档; pwsh写STATUS.md同样被拒, 改wsl append.
-- 脚本: tools/_select1.ps1 (启动+前台+E+双截, 截图落tools) + tools/_selectA.ps1 (TOPMOST干净截图相). 下一步: 焦点稳定时前台keybd_event E -> 看进不进OP/影片 (交接§6.3/6.5).
+- 脚本: tools/_select1.ps1 (启动+前台+E+双截, 截图落tools) + tools/_selectA.ps1 (TOPMOST干净截图相). 下步: 焦点稳定时前台keybd_event E -> 看进不进OP/影片 (交接§6.3/6.5).
+## 2026-11-14 上午 input打通+存档路 (title->select->loading, 存档FATAL已定位)
+- XC2_INPUT_FORCE行补上: framework/runtime/cfg.c known/group/metas三处 (此前set即FATAL, 交接§6遗留TODO); HID_TRACE证双env读入正常.
+- 构建修好: hid_srv.c 3处 + ov_system.c 2处字符串字面量内raw换行 (11-11提交带入) 致rtlib缺hid_srv.o/ov_system.o, link报8 undefined symbols; wsl perl并行后rtlib全量重编+relink haya.exe (11-14 10:03, 56723968 B). 教训: WSL git(autocrlf空)与Windows git(true)混用整树脏, wsl侧已set true.
+- 导航链 (前台keybd才进hid, 无焦点tap零buttons; E(0x45)=B_A=0x1有trace为证): title --E--> Please Select a Game (G1/I2复现, select_pack.png) --E--> 黑屏加载 (fs大块streaming+frame 6000+, G2/I4复现, select_black.png).
+- 关键FATAL: J轮黑屏后 fs: cannot create directory build/profile/save (pwsh派生进程写仓库被拒, 存档初始化崩). 已mkdir -p profile/{save,save-backup,save-tx,temp,cache}, tools/build_shin.sh加同款持久化. K轮FATAL消失.
+- 白天桌面有人时前台全失败: L轮fg=浏览器!=game, 两轮Hold btns 0->0 (INPUT_FORCE按代码应旁路焦点, 但实测仍需真前台; 疑GetAsyncKeyState/poll链另有门, 待空闲复测或加poll_merged E-transition debug log定位).
+- 待: 桌面空闲时跑自适应L脚本 (HoldChecked重试+fg校验) 一次走完 title->select->loading->OP; 看loading后画面; save/仍空, 存档写盘是否也被拒需验证.
+- 脚本: tools/_selectB..L.ps1 (TOPMOST截图/前台Hold/HID trace重定向到tools/game_*.err); 截图先落D:/consoles/tools再cp归档 (pwsh写仓库被拒).
