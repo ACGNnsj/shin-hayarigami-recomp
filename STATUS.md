@@ -363,3 +363,9 @@ export XC2_INPUT_FORCE=1          # 窗口拿不到前台时也要能按键
 - 白天桌面有人时前台全失败: L轮fg=浏览器!=game, 两轮Hold btns 0->0 (INPUT_FORCE按代码应旁路焦点, 但实测仍需真前台; 疑GetAsyncKeyState/poll链另有门, 待空闲复测或加poll_merged E-transition debug log定位).
 - 待: 桌面空闲时跑自适应L脚本 (HoldChecked重试+fg校验) 一次走完 title->select->loading->OP; 看loading后画面; save/仍空, 存档写盘是否也被拒需验证.
 - 脚本: tools/_selectB..L.ps1 (TOPMOST截图/前台Hold/HID trace重定向到tools/game_*.err); 截图先落D:/consoles/tools再cp归档 (pwsh写仓库被拒).
+## 2026-11-14 汉化接入+中文对白验证 (prologue可玩, 渲染无问题)
+- mod: D:\consoles\ns\010005F00E036000\ChineseTest\romfs 拷入 build/v0/mods/ChineseTest (一mod一目录, romfs根即覆盖层, mods.c规范); log: `ChineseTest: on, romfs, ok` + `9 RomFS files served (7 replaced, 2 added)`.
+- 繁中实证: gamestring.dat按UTF-8解出348组 (確定/取消/存檔/讀檔/數據庫/自動快进/自動播放/回想...); database.dat 6MB (剧情) 同覆盖.
+- 链路 (XC2_INPUT_SCRIPT按@<ms>灌Npad绕开焦点; 起因: DSH pwsh里keybd_event+GetAsyncKeyState恒0被吞): title→选作→PRESS ANY→主菜单(初めから)→新規→黑屏开场(BGM正常, fs读77MB/400次后停, 0 unimplemented)→氏名入力(假名盘/背景/立绘全渲染)→中文对白正常 (用户实机截图: 车内背景+三行对白, 60fps). 结论: 开场黑屏是黑底演出非bug; 姓名屏图片字/假名盘保持日文属正常 (文本补丁不动图片字).
+- 已知小问题: (1) 姓名屏空栏按PLUS → 475s进程干净退出 (无FATAL, 游戏自退; 别空栏按PLUS). 另INPUT_SCRIPT合法键名无START (A/B/X/Y/L/R/ZL/ZR/PLUS/MINUS/上下左右, input.c:64-66), nav12的START行被静默忽略. (2) pipeline-cache.bin写不进build/v0 (pwsh派生写仓库被拒) → 每次重编管线只慢不错; 修: XC2_PIPELINE_CACHE (vk_pipeline.c:151) 指仓库外, 已批量加入_select*.ps1 (D:/consoles/tools/shin-pipeline-cache.bin). (3) 存档默认build/profile同因 → 跑脚本统一XC2_PROFILE_DIR=D:/consoles/tools/shinprofile (main.c:582 portable_path), PLAY01.031+save-backup落盘正常.
+- 脚本: tools/_selectM..Y.ps1 + nav1/nav3..nav13.txt (nav在D:/consoles/tools, 脚本绝对路径引用); 抓屏: Snap内SetWindowPos强制(60,40,1280,800)+每张前重TOPMOST, 1280x800 (防拍到DSH窗口).
