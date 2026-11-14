@@ -12,3 +12,4 @@ fs_progress.log
 
 # Generated icon (tools/make_haya_icon.py).
 framework/runtime/haya.ico
+dist/
