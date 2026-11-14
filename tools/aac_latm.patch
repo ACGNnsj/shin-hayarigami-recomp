@@ -485,9 +485,9 @@
      }
      Signals s = {0};
      plat_mutex_lock(&m->mu);
-+    {   // XC2_MOVIE_DUMP: AAC framing recon (log every input incl. size-0)
++    {   // HAYA_MOVIE_DUMP: AAC framing recon (log every input incl. size-0)
 +        static int dump_init2 = 0, dump_on2 = 0;
-+        if (!dump_init2) { dump_on2 = cfg_get("XC2_MOVIE_DUMP") != NULL; dump_init2 = 1; }
++        if (!dump_init2) { dump_on2 = cfg_get("HAYA_MOVIE_DUMP") != NULL; dump_init2 = 1; }
 +        if (dump_on2 && m->mf_is_aac && m->aac_fed_first < 6 && index >= 0 && index < IN_BUFS && m->in[index]) {
 +            const uint8_t *b = m->in[index] + offset;
 +            if (size >= 8) rt_log("movie: AAC in#%d size=%d time=%lld flags=%u: %02x %02x %02x %02x %02x %02x %02x %02x",

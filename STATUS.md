@@ -369,3 +369,9 @@ export XC2_INPUT_FORCE=1          # 窗口拿不到前台时也要能按键
 - 链路 (XC2_INPUT_SCRIPT按@<ms>灌Npad绕开焦点; 起因: DSH pwsh里keybd_event+GetAsyncKeyState恒0被吞): title→选作→PRESS ANY→主菜单(初めから)→新規→黑屏开场(BGM正常, fs读77MB/400次后停, 0 unimplemented)→氏名入力(假名盘/背景/立绘全渲染)→中文对白正常 (用户实机截图: 车内背景+三行对白, 60fps). 结论: 开场黑屏是黑底演出非bug; 姓名屏图片字/假名盘保持日文属正常 (文本补丁不动图片字).
 - 已知小问题: (1) 姓名屏空栏按PLUS → 475s进程干净退出 (无FATAL, 游戏自退; 别空栏按PLUS). 另INPUT_SCRIPT合法键名无START (A/B/X/Y/L/R/ZL/ZR/PLUS/MINUS/上下左右, input.c:64-66), nav12的START行被静默忽略. (2) pipeline-cache.bin写不进build/v0 (pwsh派生写仓库被拒) → 每次重编管线只慢不错; 修: XC2_PIPELINE_CACHE (vk_pipeline.c:151) 指仓库外, 已批量加入_select*.ps1 (D:/consoles/tools/shin-pipeline-cache.bin). (3) 存档默认build/profile同因 → 跑脚本统一XC2_PROFILE_DIR=D:/consoles/tools/shinprofile (main.c:582 portable_path), PLAY01.031+save-backup落盘正常.
 - 脚本: tools/_selectM..Y.ps1 + nav1/nav3..nav13.txt (nav在D:/consoles/tools, 脚本绝对路径引用); 抓屏: Snap内SetWindowPos强制(60,40,1280,800)+每张前重TOPMOST, 1280x800 (防拍到DSH窗口).
+## 2026-11-14 配置面改名 XC2_ -> HAYA_ (haya.ini/haya_xlate, 三级兼容)
+- 原因: 全仓残留XC2名前缀 (env/xc2.ini/报错框/log文件名), 与本作无关; 改为HAYA_ (对齐haya.exe/窗口标题).
+- 做法: cfg.c PREFIX=HAYA_+LEGACY XC2_+LEGACY2 XCX_ (env/ini键三级回退 HAYA_>XC2_>XCX_); ini文件名haya.ini (无则xc2.ini再xcx.ini, 存回读到的文件); xlate探测haya_xlate优先; 报错框/log/sysinfo改Hayarigami Recomp; 26个ps1+sh脚本+注释文档批量跟进. 游戏引用 (XC2本篇/bf2/SDK记述) 与上游共享工具/安装文档不动.
+- 坑: HAYA_长5非4, key_of的+PREFIX_LEN曾把FLIGHT切成_FLIGHT致cfg_meta FATAL (probe-cfg抓到); 修法: 各前缀自带长度, norm_key/key_of复用剥离结果. 另OPS编辑保留mtime致build_game按manifest误判未改, 重编前一律touch.
+- 验证: --probe-cfg ok (三级优先+存回+新键位断言全过); haya.ini 110秒启动正常 (Z轮, 标题干净).
+- 收尾: build/v0/xc2.ini -> haya.ini (盘面改名); build/xlate补haya_xlate.* (stage 6改名拷贝); _selectZ.ps1归档.

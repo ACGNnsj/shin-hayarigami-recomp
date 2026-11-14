@@ -12,7 +12,7 @@
 依据：本作代码 12.5 MB（其中 6.1 MB 是原封 SDK），lifter 已把 72,009 个函数全部抬升、**0 条不支持的指令**，
 理论上“代码侧没有墙”，剩下全是系统边界。
 
-## 2. 框架：fork XC2 Recomp（MIT）
+## 2. 框架：fork Hayarigami Recomp（MIT）
 
 已在本机 ns/xc2-recomp 里验证：这套 recomp/gen.py 直接把我们三个模块抬成了 216 MB 的 C（11 秒），
 说明抬升器本身对 NMPL 代码无适配成本。运行时（runtime/）的能力与本作需要的边界高度吻合：

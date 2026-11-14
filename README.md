@@ -59,5 +59,5 @@ uv pip install --python .venv314/Scripts/python.exe cryptography
 
 ## 致谢
 
-抬升器与运行时来自 [XC2 Recomp](https://github.com/AksharDP/xc2-recomp) 一系（MIT；原始血统
-LAS Recomp → TotK Recomp → XCX Recomp → XC2 Recomp），提取器来自 MacNativeGames（MIT）。
+抬升器与运行时来自 [Hayarigami Recomp](https://github.com/AksharDP/xc2-recomp) 一系（MIT；原始血统
+LAS Recomp → TotK Recomp → XCX Recomp → Hayarigami Recomp），提取器来自 MacNativeGames（MIT）。

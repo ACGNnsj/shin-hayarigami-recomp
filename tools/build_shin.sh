@@ -29,7 +29,8 @@ $CL -fuse-ld=lld -Wl,--stack,16777216 -o build/v0/haya.exe \
 # 6. shader translator (borrowed from hayarigami-recomp; keeps --seconds runs from going all-black)
 mkdir -p build/xlate
 for f in xc2_xlate.exe xc2_xlate.id; do
-  if [ ! -f build/xlate/$f ]; then cp /d/consoles/ns/hayarigami-recomp/build/xlate/$f build/xlate/$f; fi
+  g=${f/xc2_xlate/haya_xlate};
+  if [ ! -f build/xlate/$g ]; then cp /d/consoles/ns/hayarigami-recomp/build/xlate/$f build/xlate/$g; fi
 done
 # 7. save/profile tree (fs MountSave FATALs if missing; pwsh-spawned runs cannot mkdir under repo taint)
 mkdir -p build/profile/save build/profile/save-backup build/profile/save-tx build/profile/temp build/profile/cache

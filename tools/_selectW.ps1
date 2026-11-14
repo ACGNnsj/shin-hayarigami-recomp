@@ -1,11 +1,11 @@
 $ErrorActionPreference='Stop'
 $env:PATH='C:\msys64\ucrt64\bin;'+$env:PATH
-$env:XC2_XLATE='D:/consoles/ns/shin-hayarigami-recomp/build/xlate/xc2_xlate.exe'
-$env:XC2_INPUT_FORCE='1'
-$env:XC2_HID_TRACE='1'
-$env:XC2_INPUT_SCRIPT='D:/consoles/tools/nav11.txt'
-$env:XC2_PROFILE_DIR='D:/consoles/tools/shinprofile'
-$env:XC2_PIPELINE_CACHE='D:/consoles/tools/shin-pipeline-cache.bin'
+$env:HAYA_XLATE='D:/consoles/ns/shin-hayarigami-recomp/build/xlate/haya_xlate.exe'
+$env:HAYA_INPUT_FORCE='1'
+$env:HAYA_HID_TRACE='1'
+$env:HAYA_INPUT_SCRIPT='D:/consoles/tools/nav11.txt'
+$env:HAYA_PROFILE_DIR='D:/consoles/tools/shinprofile'
+$env:HAYA_PIPELINE_CACHE='D:/consoles/tools/shin-pipeline-cache.bin'
 $dir='D:/consoles/ns/shin-hayarigami-recomp'
 Set-Location $dir
 Get-Process haya -ErrorAction SilentlyContinue | Stop-Process -Force

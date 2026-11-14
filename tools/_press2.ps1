@@ -1,6 +1,6 @@
 $ErrorActionPreference='Stop'
 $env:PATH='C:\msys64\ucrt64\bin;'+$env:PATH
-$env:XC2_ROMFS='D:/consoles/ns/hayarigami-recomp/build/extracted/v0/romfs'
+$env:HAYA_ROMFS='D:/consoles/ns/hayarigami-recomp/build/extracted/v0/romfs'
 $dir='D:/consoles/ns/hayarigami-recomp'
 $p = Start-Process -FilePath "$dir/build/v0/haya.exe" -ArgumentList '--seconds','22','--shot',"$dir/build/v0/shot_menu.png" -PassThru -NoNewWindow
 Start-Sleep -Seconds 9

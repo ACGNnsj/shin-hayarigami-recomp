@@ -1,6 +1,6 @@
 $ErrorActionPreference='Stop'
 $env:PATH='C:\msys64\ucrt64\bin;'+$env:PATH
-$env:XC2_ROMFS='D:/consoles/ns/hayarigami-recomp/build/extracted/v0/romfs'
+$env:HAYA_ROMFS='D:/consoles/ns/hayarigami-recomp/build/extracted/v0/romfs'
 $dir='D:/consoles/ns/hayarigami-recomp'
 Add-Type -Namespace W -Name K -MemberDefinition @'
 [DllImport("user32.dll")] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, System.UIntPtr dwExtraInfo);

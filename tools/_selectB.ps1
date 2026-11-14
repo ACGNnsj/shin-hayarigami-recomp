@@ -1,6 +1,6 @@
 $ErrorActionPreference='Stop'
 $env:PATH='C:\msys64\ucrt64\bin;'+$env:PATH
-$env:XC2_XLATE='D:/consoles/ns/shin-hayarigami-recomp/build/xlate/xc2_xlate.exe'
+$env:HAYA_XLATE='D:/consoles/ns/shin-hayarigami-recomp/build/xlate/haya_xlate.exe'
 $dir='D:/consoles/ns/shin-hayarigami-recomp'
 Set-Location $dir
 Get-Process haya -ErrorAction SilentlyContinue | Stop-Process -Force

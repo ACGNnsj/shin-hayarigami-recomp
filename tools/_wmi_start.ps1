@@ -1,5 +1,5 @@
-$env:XC2_ROMFS = 'D:/consoles/ns/hayarigami-recomp/build/extracted/v0/romfs'
-$env:XC2_INPUT_FORCE = '1'
+$env:HAYA_ROMFS = 'D:/consoles/ns/hayarigami-recomp/build/extracted/v0/romfs'
+$env:HAYA_INPUT_FORCE = '1'
 $exe = 'D:\consoles\ns\hayarigami-recomp\build\v0\haya.exe'
 $arg = '--seconds 240 --shot build/v0/wmi_shot.png'
 $cmd = '"' + $exe + '" ' + $arg
